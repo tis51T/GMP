@@ -1,6 +1,4 @@
 from typing import Optional, Tuple
-from fastNLP.modules.torch.encoder import Seq2SeqEncoder
-from fastNLP.modules.torch.decoder import Seq2SeqDecoder
 from fastNLP.modules.torch import State
 import torch
 import torch.nn.functional as F
@@ -16,6 +14,7 @@ from src.model.config import MultiModalBartConfig
 #from src.model.mixins import GenerationMixin, FromPretrainedMixin
 from src.model.modules_for_prompt_multitasks import MultiModalBartEncoder, MultiModalBartDecoder_span, Span_loss, MultiModalBartEncoder_for_Generating_aspect_prompt, MultiModalBartDecoder_generate_aspect_prompt
 from src.model.modules_for_prompt_multitasks import MultiModalBartDecoder_aspects_num 
+import json
 
 
 class MultiModalBartModel_AESC(PretrainedBartModel):
@@ -135,6 +134,8 @@ class MultiModalBartModel_AESC(PretrainedBartModel):
                       aesc_infos=None,
                       aspects_num=None,
                       first=None):
+        
+        
         ##generate prompt for each instance
 
         prompt_attention_mask = attention_mask
@@ -181,10 +182,32 @@ class MultiModalBartModel_AESC(PretrainedBartModel):
         aspect_prompt_decoder_input_ids, aspect_prompt_decoder_attention_mask = [
             aesc_infos['aspect_prompt_decoder_input_ids'].to(input_ids.device),
             aesc_infos['aspect_prompt_decoder_attention_mask'].to(input_ids.device)]
+
+        # # Save aspect_prompt_decoder_input_ids and attention mask to a single file during training
+        # if self.training:
+        #     # Use a global list to collect all prompt data
+        #     if not hasattr(self, 'all_prompt_data'):
+        #         self.all_prompt_data = []
+        #     prompt_ids = aspect_prompt_decoder_input_ids.cpu().tolist()
+        #     prompt_attention = aspect_prompt_decoder_attention_mask.cpu().tolist()
+        #     self.all_prompt_data.append({
+        #         'ids': prompt_ids,
+        #         'attention_mask': prompt_attention
+        #     })
+        #     # Optionally, save at the end of training (user should call this manually)
+        #     with open('./aspect_prompt_decoder/15_ae.json', 'r') as f:
+        #         aspect_prompt_data = json.load(f)
+        #     aspect_prompt_data["ids"].extend(prompt_ids)
+        #     aspect_prompt_data["attention_mask"].extend(prompt_attention)
+                
+        #     with open('aspect_prompt_decoder_data_all.json', 'w') as f:
+        #         json.dump(aspect_prompt_data, f)
+
         generated_prompt = self.prompt_decoder(
-                                            encoder_outputs=dict_for_prompt.last_hidden_state, 
-                                            attention_mask=attention_mask,
-                                            decoder_input_ids =aspect_prompt_decoder_input_ids, decoder_attention_mask=aspect_prompt_decoder_attention_mask)
+            encoder_outputs=dict_for_prompt.last_hidden_state, 
+            attention_mask=attention_mask,
+            decoder_input_ids=aspect_prompt_decoder_input_ids, 
+            decoder_attention_mask=aspect_prompt_decoder_attention_mask)
 
         generated_prompt = generated_prompt[:, 1:, :] ##(batch_size, 2, 768)
 

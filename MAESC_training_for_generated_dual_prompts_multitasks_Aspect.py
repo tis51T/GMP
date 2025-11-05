@@ -10,7 +10,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.tensorboard import SummaryWriter
-from transformers import AdamW
+# from transformers import AdamW
+from torch.optim import AdamW
 import random
 from src.data.collation_for_prompt_multitasks import Collator
 from src.data.dataset_for_prompt import MVSA_Dataset, Twitter_Dataset
@@ -216,8 +217,7 @@ def main(rank, args):
         if (epoch + 1) % args.eval_every == 0:
             # train_dev = eval_utils.eval(model, train_loader, metric, device)
             res_dev, dev_aspects_num_acc = eval_utils.eval(args, model, dev_loader, metric, device)
-            res_test, test_aspects_num_acc = eval_utils.eval(args, model, test_loader, metric,
-                                       device)
+            res_test, test_aspects_num_acc = eval_utils.eval(args, model, test_loader, metric, device)
 
             logger.info('DEV  aesc_p:{} aesc_r:{} aesc_f:{}, dev_aspects_num_acc: {:.4f}'.format(
                 res_dev['aesc_pre'], res_dev['aesc_rec'], res_dev['aesc_f'], dev_aspects_num_acc))
@@ -247,8 +247,10 @@ def main(rank, args):
             if args.is_check == 1 and save_flag:
                 current_checkpoint_path = os.path.join(checkpoint_path,
                                                        args.check_info)
-                model.seq2seq_model.save_pretrained(current_checkpoint_path)
-                print('save model!!!!!!!!!!!')
+                # model.seq2seq_model.save_pretrained(current_checkpoint_path)
+                # Save as .pt file
+                torch.save(model.seq2seq_model.state_dict(), os.path.join(current_checkpoint_path, "model_weights.pt"))
+                print('save model!!!!!!!!!!! and model_weights.pt')
         epoch += 1
     logger.info("Training complete in: " + str(datetime.now() - start),
                 pad=True)
@@ -287,7 +289,7 @@ def parse_args():
                         type=str,
                         help='where to save the checkpoint')
     parser.add_argument('--bart_model',
-                        default='/home/xiaocui/code/FW-MABSA/data/weights/bart-base',
+                        default='../bart_models/bart-base',
                         type=str,
                         help='bart pretrain model')
     # path

@@ -7,7 +7,7 @@ do
             for num_image_tokens in 4
             do
                 CUDA_VISIBLE_DEVICES=2 python twitter_ae_training_for_generated_prompt_multitasks.py \
-                        --dataset twitter15 /home/xiaocui/code/FW-MABSA/VLP-MABSA/src/data/jsons/few_shot_for_prompt/twitter_2015/twitter15_${seed}_info.json \
+                        --dataset twitter15 ./src/data/jsons/few_shot_for_prompt/twitter_2015/twitter15_${seed}_info.json \
                         --checkpoint_dir ./ \
                         --model_config ./config/pretrain_base.json \
                         --log_dir log_for_generated_aspect_prompt_multitasks/15_${seed}_ae \

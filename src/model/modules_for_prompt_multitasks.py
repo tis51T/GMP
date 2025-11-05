@@ -21,6 +21,7 @@ from src.model.config import MultiModalBartConfig
 from transformers import AutoConfig, AutoModel, CLIPVisionModel, CLIPVisionConfig
 import timm
 from src.model.attention import Attention_for_Senti_Prompt
+from transformers.modeling_outputs import BaseModelOutput
 
 TIMM_MODELS = {
     'nf_resnet50': 2048,
@@ -181,17 +182,34 @@ class MultiModalBartEncoder(nn.Module):
         """embed textual and visual inputs and combine them into one embedding"""
         mask = (input_ids == self.img_feat_id) | (
             input_ids == self.cls_token_id)
-        # print(mask.shape)
         embedded_images = self.embed_images(image_features)
         embedded = self.embed_tokens(input_ids)
-        # print('mask shape', mask.shape)
+                
+        
         if not embedded_images[0].dtype == torch.float32:
             embedded = embedded.half()
+        
+        # print('mask shape:', mask.shape)
+        # print(mask)
+        
+        # print(f'embedded shape: {embedded.shape} - first embedded shape: {embedded[0].shape}')
+        # print(embedded)
+        
+        # print('embedded_images shape:', embedded_images[0].shape, "- first embedded_images dtype:", embedded_images[0].dtype)
+        # print(embedded_images)
 
-        for index, value in enumerate(embedded_images):
-            if len(value) > 0:
-                embedded[index, mask[index]] = value
+        for i in range(len(embedded)):
+            embedded[i, mask[i]] = embedded_images[i]
 
+        # for index, value in enumerate(embedded_images):
+        #     try:
+        #         if len(value) > 0:
+        #             embedded[index, mask[index]] = value
+        #     except:
+        #         break
+                
+
+        # print(embedded.shape)
         return embedded
 
     def forward(self,
@@ -323,9 +341,8 @@ class MultiModalBartEncoder_for_Generating_aspect_prompt(nn.Module):
         if not embedded_images[0].dtype == torch.float32:
             embedded = embedded.half()
 
-        for index, value in enumerate(embedded_images):
-            if len(value) > 0:
-                embedded[index, mask[index]] = value
+        for i in range(len(embedded)):
+            embedded[i, mask[i]] = embedded_images[i]
         
         new_input_ids =[]
         # import ipdb; ipdb.set_trace()
@@ -394,24 +411,24 @@ class MultiModalBartEncoder_for_Generating_aspect_prompt(nn.Module):
             
                 for index in range(len(aspects_num)):
                     aspect_num = aspects_num[index]
-                    # prompt_embedding_ = generated_prompt[index].repeat(aspect_num, 1)
-                    prompt_embedding_list = []
-                    for j in range(aspect_num):
-                        aspect_linear = nn.Linear(768, 768).to(generated_aspect_prompt.device) ##每个aspect有自己的变换，为每个aspect设计特定的prompt
-                        aspect_relu = nn.LeakyReLU().to(generated_aspect_prompt.device)
-                        prompt_embedding = aspect_linear(generated_aspect_prompt[index])
-                        prompt_embedding = aspect_relu(prompt_embedding)
-                        ###可以加入激活函数
-                        # prompt_embedding = nn.LeakyReLU(prompt_embedding)
-                        prompt_embedding_list.append(prompt_embedding)
-                    prompt_embedding_ = torch.cat(prompt_embedding_list, dim=0)
-                    embedded[index, prompt_mask[index]] = prompt_embedding_
+                    prompt_mask_count = prompt_mask[index].sum().item()
+                    if aspect_num > 0 and prompt_mask_count == aspect_num:
+                        prompt_embedding_list = []
+                        for j in range(aspect_num):
+                            aspect_linear = nn.Linear(768, 768).to(generated_aspect_prompt.device) ##每个aspect有自己的变换，为每个aspect设计特定的prompt
+                            aspect_relu = nn.LeakyReLU().to(generated_aspect_prompt.device)
+                            prompt_embedding = aspect_linear(generated_aspect_prompt[index])
+                            prompt_embedding = aspect_relu(prompt_embedding)
+                            prompt_embedding_list.append(prompt_embedding)
+                        prompt_embedding_ = torch.cat(prompt_embedding_list, dim=0)
+                        embedded[index, prompt_mask[index]] = prompt_embedding_
             else:
                 for index in range(len(aspects_num)):
                     aspect_num = aspects_num[index]
-                    prompt_embedding_ = generated_aspect_prompt[index].repeat(aspect_num, 1)
-
-                    embedded[index, prompt_mask[index]] = prompt_embedding_
+                    prompt_mask_count = prompt_mask[index].sum().item()
+                    if aspect_num > 0 and prompt_mask_count == aspect_num:
+                        prompt_embedding_ = generated_aspect_prompt[index].repeat(aspect_num, 1)
+                        embedded[index, prompt_mask[index]] = prompt_embedding_
         return embedded
        
 
@@ -545,11 +562,8 @@ class MultiModalBartEncoder_for_Generating_sentiment_prompt(nn.Module):
         if not embedded_images[0].dtype == torch.float32:
             embedded = embedded.half()
 
-        for index, value in enumerate(embedded_images):
-            if len(value) > 0:
-                embedded[index, mask[index]] = value
-        
-       
+        for i in range(len(embedded)):
+            embedded[i, mask[i]] = embedded_images[i]
         
         if self.use_generated_prompt:
             senti_prompt_mask = (input_ids == self.senti_prompt_token_id)
@@ -560,24 +574,25 @@ class MultiModalBartEncoder_for_Generating_sentiment_prompt(nn.Module):
             
                 for index in range(len(aspects_num)):
                     aspect_num = aspects_num[index]
-                    # prompt_embedding_ = generated_prompt[index].repeat(aspect_num, 1)
-                    prompt_embedding_list = []
-                    for j in range(aspect_num):
-                        aspect_linear = nn.Linear(768, 768).to(generated_senti_prompt.device)
-                        aspect_relu = nn.LeakyReLU().to(generated_senti_prompt.device)
-                        prompt_embedding = aspect_linear(generated_senti_prompt[index])
-                        prompt_embedding = aspect_relu(prompt_embedding)
-                        ###可以加入激活函数å
-                        # prompt_embedding = nn.LeakyReLU(prompt_embedding)
-                        prompt_embedding_list.append(prompt_embedding)
-                    prompt_embedding_ = torch.cat(prompt_embedding_list, dim=0)
-                    embedded[index, senti_prompt_mask[index]] = prompt_embedding_
+                    prompt_mask_count = senti_prompt_mask[index].sum().item()
+                    if aspect_num > 0 and prompt_mask_count == aspect_num:
+                        prompt_embedding_list = []
+                        for j in range(aspect_num):
+                            senti_linear = nn.Linear(768, 768).to(generated_senti_prompt.device)
+                            senti_relu = nn.LeakyReLU().to(generated_senti_prompt.device)
+                            prompt_embedding = senti_linear(generated_senti_prompt[index])
+                            prompt_embedding = senti_relu(prompt_embedding)
+                            prompt_embedding_list.append(prompt_embedding)
+                        prompt_embedding_ = torch.cat(prompt_embedding_list, dim=0)
+                        embedded[index, senti_prompt_mask[index]] = prompt_embedding_
             else:
                 for index in range(len(aspects_num)):
                     aspect_num = aspects_num[index]
-                    prompt_embedding_ = generated_senti_prompt[index].repeat(aspect_num, 1)
+                    senti_prompt_mask_count = senti_prompt_mask[index].sum().item()
+                    if aspect_num > 0 and senti_prompt_mask_count == aspect_num:
+                        prompt_embedding_ = generated_senti_prompt[index].repeat(aspect_num, 1)
 
-                    embedded[index, senti_prompt_mask[index]] = prompt_embedding_
+                        embedded[index, senti_prompt_mask[index]] = prompt_embedding_
         return embedded
        
 
@@ -725,9 +740,8 @@ class MultiModalBartEncoder_for_Generating_Dual_prompts(nn.Module):
         if not embedded_images[0].dtype == torch.float32:
             embedded = embedded.half()
 
-        for index, value in enumerate(embedded_images):
-            if len(value) > 0:
-                embedded[index, mask[index]] = value
+        for i in range(len(embedded)):
+            embedded[i, mask[i]] = embedded_images[i]
         
 
         new_input_ids =[]

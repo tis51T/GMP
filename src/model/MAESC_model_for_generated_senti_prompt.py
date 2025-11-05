@@ -56,6 +56,7 @@ class MultiModalBartModel_AESC(PretrainedBartModel):
                         raise RuntimeError(f"{token} wrong split")
                     else:
                         index = index[0]
+                        
                     assert index >= num_tokens, (index, num_tokens, token)
                     indexes = _tokenizer.convert_tokens_to_ids(
                         _tokenizer.tokenize(token[2:-2]))
@@ -63,6 +64,7 @@ class MultiModalBartModel_AESC(PretrainedBartModel):
                     for i in indexes[1:]:
                         embed += model.decoder.embed_tokens.weight.data[i]
                     embed /= len(indexes)
+                    
                     model.decoder.embed_tokens.weight.data[index] = embed
         else:
             raise RuntimeError("error init!!!!!!!")
@@ -174,6 +176,7 @@ class MultiModalBartModel_AESC(PretrainedBartModel):
         prompt_decoder_input_ids, prompt_decoder_attention_mask = [
             aesc_infos['senti_prompt_decoder_input_ids'].to(input_ids.device),
             aesc_infos['senti_prompt_decoder_attention_mask'].to(input_ids.device)]
+        
         generated_prompt = self.senti_prompt_decoder(
                                             encoder_outputs=dict_for_prompt.last_hidden_state, 
                                             attention_mask=attention_mask,
@@ -217,13 +220,8 @@ class MultiModalBartModel_AESC(PretrainedBartModel):
             output_attentions=None,
             output_hidden_states=None,
     ):
-        ### for prompt
-        # import ipdb; ipdb.set_trace()
-       
-        ## for aspect-spans
-      
         aspects_num = torch.tensor(aspects_num).to(input_ids.device)
-        state = self.prepare_state( input_ids, image_features, attention_mask, aesc_infos, aspects_num)
+        state = self.prepare_state(input_ids, image_features, attention_mask, aesc_infos, aspects_num)
         spans, span_mask = [ 
             aesc_infos['labels'].to(input_ids.device),
             aesc_infos['masks'].to(input_ids.device)
@@ -233,7 +231,10 @@ class MultiModalBartModel_AESC(PretrainedBartModel):
 
         loss = self.span_loss_fct(spans[:, 1:], logits, span_mask[:, 1:])
 
-        return loss
+        # Calculate predict_aspects_num (example logic, adjust as needed)
+        predict_aspects_num = torch.argmax(logits, dim=-1).sum(dim=1)
+
+        return loss, predict_aspects_num
 
 
 class BartState(State):

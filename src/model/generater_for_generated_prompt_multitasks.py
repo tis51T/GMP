@@ -122,6 +122,7 @@ class SequenceGeneratorModel(nn.Module):
                                                  aesc_infos,
                                                  aspects_num)
         tgt_tokens = aesc_infos['labels'].to(input_ids.device)
+        # print("aesc_info:", aesc_infos)
         # print()
         result = self.generator.generate(
             state,

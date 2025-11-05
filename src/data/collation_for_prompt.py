@@ -112,7 +112,7 @@ class Collator:
 
         encoded_conditions = self._tokenizer.encode_condition(
             task=self.task,
-            img_num=img_num, use_caption=self.use_caption,
+            img_num=img_num, 
             caption=image_caption, sentence=sentence, has_prompt=self.has_prompt, aspects_num=aspects_num, text_only=self.text_only)
 
         input_ids = encoded_conditions['input_ids']

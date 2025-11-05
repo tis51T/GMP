@@ -21,6 +21,7 @@ from src.model.config import MultiModalBartConfig
 from transformers import AutoConfig, AutoModel, CLIPVisionModel, CLIPVisionConfig
 import timm
 from src.model.attention import Attention_for_Senti_Prompt
+from transformers.modeling_outputs import BaseModelOutput
 
 TIMM_MODELS = {
     'nf_resnet50': 2048,
@@ -817,6 +818,7 @@ class MultiModalBartEncoder_for_Generating_Dual_prompts(nn.Module):
                                hidden_states=encoder_states,
                                attentions=all_attentions)
 
+
 class MultiModalBartDecoder_span(nn.Module
                                  ):  #AOE task and all downstream tasks
     def __init__(self,
@@ -829,7 +831,8 @@ class MultiModalBartDecoder_span(nn.Module
                  need_tag=True,
                  only_sc=False,
                  avg_feature=False,
-                 use_encoder_mlp=True):
+                 use_encoder_mlp=True,
+                 num_image_tokens=None):
         super().__init__()
         self.decoder = decoder
         self.tokenizer = tokenizer
@@ -841,6 +844,7 @@ class MultiModalBartDecoder_span(nn.Module
         self.label_end_id = max(label_ids) + 1
         self.need_tag = need_tag
         self.only_sc = only_sc
+        self.num_image_tokens = num_image_tokens
         mapping = torch.LongTensor([0, 2] + label_ids)
         ###mapping: [0, 2, 50276, 50277, 50278, 50281]
         self.register_buffer('mapping', mapping)
@@ -980,9 +984,23 @@ class MultiModalBartDecoder_span(nn.Module
                 gen_scores = torch.einsum(
                     'blh,bnh->bln', hidden_state,
                     input_embed)  # bsz x max_len x max_word_len: (2, 12, 34)
-                word_scores = (gen_scores + word_scores) / 2 
-            mask = mask.__or__(
-                src_tokens.eq(2).cumsum(dim=1).ge(1).unsqueeze(1)) ###(2, 1, 34)
+                
+                # Ensure gen_scores and word_scores have the same size along dimension 2
+                min_len = min(gen_scores.size(2), word_scores.size(2))
+                gen_scores = gen_scores[:, :, :min_len]
+                word_scores = word_scores[:, :, :min_len]
+
+                word_scores = (gen_scores + word_scores) / 2
+
+            # Ensure mask and src_tokens.eq(2).cumsum(dim=1).ge(1).unsqueeze(1) have the same size
+            min_len = min(mask.size(2), src_tokens.size(1))
+            mask = mask[:, :, :min_len]
+            src_tokens_adjusted = src_tokens[:, :min_len]
+
+            mask = mask.__or__(src_tokens_adjusted.eq(2).cumsum(dim=1).ge(1).unsqueeze(1))
+
+            # mask = mask.__or__(
+            #     src_tokens.eq(2).cumsum(dim=1).ge(1).unsqueeze(1)) ###(2, 1, 34)
             word_scores = word_scores.masked_fill(mask, -1e32) ###(bts, max_len, max_word_len)
             logits[:, :, self.src_start_index:] = word_scores
             ###logits.shape (bts, max_len, max_word_len+6): (2, 12, 40)

@@ -10,7 +10,9 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.tensorboard import SummaryWriter
-from transformers import AdamW
+# from transformers import AdamW
+from torch.optim import AdamW
+
 import random
 from src.data.collation_for_prompt_multitasks import Collator
 from src.data.dataset_for_prompt import MVSA_Dataset, Twitter_Dataset
@@ -153,7 +155,7 @@ def main(rank, args):
         #                                  tokenizer, label_ids)
     model.to(device)
     parameters = get_parameter_number(model) ##{'Total': 169351685, 'Trainable': 169351685}
-    print(parameters)
+    print(f"Parameters: {parameters}")
 
     optimizer = AdamW(model.parameters(), lr=args.lr, betas=(0.9, 0.999))
 
@@ -177,7 +179,6 @@ def main(rank, args):
                                   use_caption=args.use_caption)
 
     train_dataset = Twitter_Dataset(args.dataset[0][1], split='train')
-
     dev_dataset = Twitter_Dataset(args.dataset[0][1], split='dev')
     test_dataset = Twitter_Dataset(args.dataset[0][1], split='test')
 
@@ -187,6 +188,8 @@ def main(rank, args):
                               num_workers=args.num_workers,
                               pin_memory=True,
                               collate_fn=collate_twitter_ae)
+    
+    
     dev_loader = DataLoader(dataset=dev_dataset,
                             batch_size=args.batch_size,
                             shuffle=False,
@@ -261,8 +264,10 @@ def main(rank, args):
             if args.is_check == 1 and save_flag:
                 current_checkpoint_path = os.path.join(checkpoint_path,
                                                        args.check_info)
-                model.seq2seq_model.save_pretrained(current_checkpoint_path)
-                print('save model!!!!!!!!!!!')
+                # model.seq2seq_model.save_pretrained(current_checkpoint_path)
+                # Save as .pt file
+                torch.save(model.seq2seq_model.state_dict(), os.path.join(current_checkpoint_path, "model_weights.pt"))
+                print('save model!!!!!!!!!!! and model_weights.pt')
         epoch += 1
     logger.info("Training complete in: " + str(datetime.now() - start),
                 pad=True)
@@ -300,7 +305,7 @@ def parse_args():
                         type=str,
                         help='where to save the checkpoint')
     parser.add_argument('--bart_model',
-                        default='/home/xiaocui/code/FW-MABSA/data/weights/bart-base',
+                        default='../bart_models/bart-base',
                         type=str,
                         help='bart pretrain model')
     # path

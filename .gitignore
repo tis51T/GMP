@@ -1,0 +1,5 @@
+checkpoint/
+data/twitter2015_images/
+data/twitter2017_images/
+log/
+__pycache__/

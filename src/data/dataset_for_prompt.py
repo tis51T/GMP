@@ -143,6 +143,7 @@ class Twitter_Dataset(data.Dataset):
             self.data_set = json.load(
                 open(self.infos['data_dir'] + '/train.json', 'r'))
             self.img_region_dir = self.infos['img_region_dir'] + '/train'
+            
         elif split == 'dev':
             self.data_set = json.load(
                 open(self.infos['data_dir'] + '/dev.json', 'r'))
@@ -153,6 +154,7 @@ class Twitter_Dataset(data.Dataset):
             self.img_region_dir = self.infos['img_region_dir'] + '/test'
         else:
             raise RuntimeError("split type is not exist!!!")
+        print(self.img_region_dir)
 
         self.image_model_name = image_model_name
         self.image_transform = self.get_image_transform(self.image_model_name)
@@ -172,12 +174,15 @@ class Twitter_Dataset(data.Dataset):
     def is_clip_model(self, model_name):
         return model_name.startswith('openai/clip-')
 
+    def unsqueeze_image(self,x):
+        return x.unsqueeze(0)
+
     def get_image_transform(self, model_name):
         if model_name in TIMM_CONFIGS.keys():
             config = TIMM_CONFIGS[model_name]
             transform = create_transform(**config)
             transform.transforms.append(
-                Lambda(lambda x: x.unsqueeze(0)),
+                Lambda(self.unsqueeze_image),  # Use the named function instead of lambda
             )
         elif self.is_clip_model(model_name):
             transform = CLIPFeatureExtractor.from_pretrained(model_name)

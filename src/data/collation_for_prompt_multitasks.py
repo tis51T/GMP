@@ -88,6 +88,7 @@ class Collator:
     def __call__(self, batch):
         batch = [entry for entry in batch if entry is not None]
 
+
         # image_features = [
         #     torch.from_numpy(x['img_feat'][:self._max_img_num])
         #     if 'img_feat' in x else torch.empty(0) for x in batch

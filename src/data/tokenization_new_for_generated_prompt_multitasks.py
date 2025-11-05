@@ -19,7 +19,7 @@ class ConditionTokenizer:
     """
     def __init__(self,
                  args,
-                 pretrained_model_name='/home/xiaocui/code/FW-MABSA/data/weights/bart-base',
+                 pretrained_model_name='../bart_models/bart-base',
                  cls_token="<<cls>>",
                  mlm_token="<<mlm>>",
                  mrm_token="<<mrm>>",
@@ -60,12 +60,21 @@ class ConditionTokenizer:
             aesc_token, ae_token, sc_token, 
             aspect_prompt_token, senti_prompt_token, begin_prompt, end_prompt
         ]
-        unique_no_split_tokens = self._base_tokenizer.unique_no_split_tokens
-        self._base_tokenizer.unique_no_split_tokens = unique_no_split_tokens + self.additional_special_tokens
-        self.unique_no_split_tokens = self._base_tokenizer.unique_no_split_tokens
+        # unique_no_split_tokens = self._base_tokenizer.unique_no_split_tokens
+        # self._base_tokenizer.unique_no_split_tokens = unique_no_split_tokens + self.additional_special_tokens
+        # self.unique_no_split_tokens = self._base_tokenizer.unique_no_split_tokens
+        # print(self.unique_no_split_tokens)
+
+        # self._base_tokenizer.add_tokens(self.additional_special_tokens)
+        
+
+        self._base_tokenizer.add_special_tokens({'additional_special_tokens': self.additional_special_tokens})
+        self.unique_no_split_tokens = self._base_tokenizer.additional_special_tokens
         print(self.unique_no_split_tokens)
 
         self._base_tokenizer.add_tokens(self.additional_special_tokens)
+
+        
         self.cls_token = cls_token
         self.mlm_token = mlm_token
         self.mrm_token = mrm_token

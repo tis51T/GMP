@@ -6,9 +6,9 @@ The code is running on Python.
 
 
 ## Data
-The image-text data can be downloaded from [Google Drive](https://drive.google.com/drive/folders/1NgPH5xhz5dF-Zwxe-8CjjsgQJ5VaQ8KL?usp=sharing).
+The image-text data can be downloaded from [Kaggle](https://www.kaggle.com/datasets/tisdang/twitter-data-for-my-seminar).
 
-## Model
+## BART model
 BART model must be downloaded for running.
 ```
 from transformers import BartForConditionalGeneration, BartTokenizer
@@ -20,7 +20,7 @@ tokenizer = BartTokenizer.from_pretrained(model_name)
 model = BartForConditionalGeneration.from_pretrained(model_name)
 
 # After loading or training your model
-model.save_pretrained(oath)
+model.save_pretrained(path)
 tokenizer.save_pretrained(path)
 ```
 

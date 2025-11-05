@@ -5,6 +5,7 @@ import torch.nn as nn
 def eval(args, model, loader, metric, device):
     model.eval()
     for i, batch in enumerate(loader):
+        
         # Forward pass
         if args.task == 'twitter_ae':
             aesc_infos = {

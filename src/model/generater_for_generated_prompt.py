@@ -116,17 +116,19 @@ class SequenceGeneratorModel(nn.Module):
         :return:
         """
         # import ipdb; ipdb.set_trace()
-        state  = self.seq2seq_model.prepare_state(
+        state, predict_aspects_num = self.seq2seq_model.prepare_state(
                                                  input_ids, image_features,
                                                  attention_mask,
                                                  aesc_infos,
                                                  aspects_num)
+
+        
         tgt_tokens = aesc_infos['labels'].to(input_ids.device)
         # print()
         result = self.generator.generate(
             state,
             tokens=tgt_tokens[:, :3])  # the prompt is provided to the model
-        return result
+        return result, predict_aspects_num
 
 
 r"""
