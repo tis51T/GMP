@@ -8,21 +8,6 @@ The code is running on Python.
 ## Data
 The image-text data can be downloaded from [Kaggle](https://www.kaggle.com/datasets/tisdang/twitter-data-for-my-seminar).
 
-## BART model
-BART model must be downloaded for running.
-```
-from transformers import BartForConditionalGeneration, BartTokenizer
-
-model_name = "facebook/bart-large-cnn"  # or "facebook/bart-base"
-path="your_path"
-
-tokenizer = BartTokenizer.from_pretrained(model_name)
-model = BartForConditionalGeneration.from_pretrained(model_name)
-
-# After loading or training your model
-model.save_pretrained(path)
-tokenizer.save_pretrained(path)
-```
 
 
 ## Task Training

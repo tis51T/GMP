@@ -8,7 +8,6 @@ def eval(args, model, loader, metric, device):
     all_targets = []
     model.eval()
     for i, batch in enumerate(tqdm(loader, desc="Evaluating")):
-        print(batch)
         # Forward pass
         if args.task == 'twitter_ae':
             aesc_infos = {

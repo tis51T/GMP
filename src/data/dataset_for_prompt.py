@@ -154,7 +154,7 @@ class Twitter_Dataset(data.Dataset):
             self.img_region_dir = self.infos['img_region_dir'] + '/test'
         else:
             raise RuntimeError("split type is not exist!!!")
-        print(self.img_region_dir)
+        # print(self.img_region_dir)
 
         self.image_model_name = image_model_name
         self.image_transform = self.get_image_transform(self.image_model_name)

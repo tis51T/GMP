@@ -40,7 +40,7 @@ def pretrain(task_list,
             total_loss = 0
             for cnt, task in enumerate(task_list):
                 batch = batchs[cnt]
-                # print(batch.keys())
+     
                 if task == 'Sentiment':
                     loss, prelogits = model.forward(
                         task,
@@ -122,9 +122,7 @@ def fine_tune(epoch,
               scaler=None):
 
     total_step = len(train_loader)
-    print(type(model))
-    
-    
+
     model.train()
     total_loss = 0
 
@@ -186,74 +184,3 @@ def fine_tune(epoch,
     print('The accuracy of aspects_num is {:.4f} !!!!'.format(train_acc))
     print('Precision: {:.4f}, Recall: {:.4f}'.format(precision, recall))
 
-
-
-# def fine_tune(epoch,
-#               model,
-#               train_loader,
-#               test_loader,
-#               metric,
-#               optimizer,
-#               device,
-#               args,
-#               logger=None,
-#               callback=None,
-#               log_interval=1,
-#               tb_writer=None,
-#               tb_interval=1,
-#               scaler=None):
-
-#     total_step = len(train_loader)
-#     model.train()
-#     total_loss = 0
-
-#     start_time = datetime.now()
-#     num_correct =0
-
-#     for i, batch in enumerate(train_loader):
-#         # Forward pass
-#         if args.task == 'twitter_ae':
-#             aesc_infos = {
-#                 key: value
-#                 for key, value in batch['TWITTER_AE'].items()
-#             }
-#         elif args.task == 'twitter_sc':
-#             aesc_infos = {
-#                 key: value
-#                 for key, value in batch['TWITTER_SC'].items()
-#             }
-#         else:
-#             aesc_infos = {key: value for key, value in batch['AESC'].items()}
-#             # import ipdb; ipdb.set_trace()
-#             # print("+++++++++++++++++++++++++++++++++++++++++++")
-#             # print('aesc_infos is {}'.format(aesc_infos))
-#         device_type = 'cuda' if torch.cuda.is_available() else 'cpu'
-#         with amp.autocast(device_type, enabled=args.amp):
-#     # ...
-#             loss, predict_aspects_num = model.forward(
-#                 input_ids=batch['input_ids'].to(device),
-#                 image_features=list(
-#                     map(lambda x: x.to(device), batch['image_features'])),
-#                 attention_mask=batch['attention_mask'].to(device),
-#                 aesc_infos=aesc_infos, 
-#                 aspects_num=batch['aspects_num'])
-#             target_aspects_num = torch.tensor(batch['aspects_num']).to(predict_aspects_num.device)
-#             num_correct += torch.eq(predict_aspects_num, target_aspects_num).sum().float().item()
-
-#             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(
-#                 epoch + 1, args.epochs, i + 1, total_step, loss.item()))
-#         train_acc = num_correct/len(train_loader.dataset)
-#         print('The accuracy of aspects_num is {:.4f} !!!!'.format(train_acc))
-#         # Backward and optimize
-
-#         cur_step = i + 1 + epoch * total_step
-#         t_step = args.epochs * total_step
-#         liner_warm_rate = utils.liner_warmup(cur_step, t_step, args.warmup)
-#         utils.set_lr(optimizer, liner_warm_rate * args.lr)
-
-#         optimizer.zero_grad()
-
-#         loss.backward()
-#         utils.clip_gradient(optimizer, args.grad_clip)
-
-#         optimizer.step()

@@ -62,12 +62,16 @@ def main(rank, args):
 
     logger.info('Loading model...')
 
-    if args.cpu:
-        device = 'cpu'
-        map_location = device
+    # select device: use CPU if requested or if CUDA is unavailable
+    if args.cpu or not torch.cuda.is_available():
+        device = torch.device("cpu")
+        map_location = "cpu"
+        if not args.cpu:
+            logger.info("CUDA not available or not compiled; falling back to CPU.", pad=True)
     else:
-        device = torch.device("cuda:{}".format(rank))
-        map_location = {'cuda:%d' % 0: 'cuda:%d' % rank}
+        device = torch.device(f"cuda:{rank}")
+        map_location = {'cuda:0': f'cuda:{rank}'}
+
 
     tokenizer = ConditionTokenizer(args=args)
     label_ids = list(tokenizer.mapping2id.values())
